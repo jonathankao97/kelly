@@ -20,6 +20,12 @@
     --bad: #f87171;
     --buy: #4ade80;
     --sell: #fb923c;
+    --grid: #23252e;
+    --path: rgba(180, 190, 210, 0.08);
+    --best: #4ade80;
+    --worst: #f87171;
+    --median: #4ea1ff;
+    --mean: #c084fc;
   }
   @media (prefers-color-scheme: light) {
     :root {
@@ -33,6 +39,12 @@
       --bad: #dc2626;
       --buy: #16a34a;
       --sell: #ea580c;
+      --grid: #eceef2;
+      --path: rgba(60, 70, 90, 0.06);
+      --best: #16a34a;
+      --worst: #dc2626;
+      --median: #1a73e8;
+      --mean: #9333ea;
     }
   }
   * { box-sizing: border-box; }
@@ -42,6 +54,8 @@
   body { padding: max(env(safe-area-inset-top), 16px) 16px max(env(safe-area-inset-bottom), 16px); }
   .wrap { max-width: 560px; margin: 0 auto; }
   h1 { font-size: 20px; margin: 4px 0 16px; font-weight: 600; letter-spacing: -0.01em; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--muted); font-weight: 600; margin: 0 0 12px; }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px;
     padding: 16px; margin-bottom: 14px; }
   label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
@@ -54,12 +68,18 @@
   input:focus { border-color: var(--accent); }
   .row { margin-bottom: 12px; }
   .row:last-child { margin-bottom: 0; }
-  button {
+  button.primary {
     width: 100%; padding: 14px; font-size: 16px; font-weight: 600;
     background: var(--accent); color: white; border: none; border-radius: 10px;
     -webkit-appearance: none; cursor: pointer;
   }
-  button:active { opacity: 0.85; }
+  button.primary:active { opacity: 0.85; }
+  button.secondary {
+    padding: 10px 14px; font-size: 14px; font-weight: 500;
+    background: transparent; color: var(--text);
+    border: 1px solid var(--border); border-radius: 10px;
+    -webkit-appearance: none; cursor: pointer;
+  }
   .status { margin: 12px 0 0; font-size: 14px; min-height: 20px; }
   .status.buy { color: var(--buy); font-weight: 600; }
   .status.sell { color: var(--sell); font-weight: 600; }
@@ -72,6 +92,49 @@
     letter-spacing: 0.03em; }
   th:first-child, td:first-child { text-align: left; }
   tr:last-child td { border-bottom: none; }
+
+  .segmented { display: flex; gap: 4px; padding: 4px;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 10px; }
+  .segmented button {
+    flex: 1; padding: 8px 4px; font-size: 13px; font-weight: 500;
+    background: transparent; color: var(--muted);
+    border: none; border-radius: 7px; cursor: pointer;
+    -webkit-appearance: none;
+    font-variant-numeric: tabular-nums;
+  }
+  .segmented button.active { background: var(--accent); color: white; }
+  .plot-header { display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px; }
+  .plot-header h2 { margin: 0; }
+  canvas { width: 100%; height: auto; display: block; border-radius: 8px; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+    margin-top: 12px; }
+  .stat { padding: 10px; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; text-align: center; }
+  .stat .lbl { font-size: 11px; color: var(--muted); text-transform: uppercase;
+    letter-spacing: 0.05em; margin-bottom: 4px; }
+  .stat .val { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .stat.best .val { color: var(--best); }
+  .stat.worst .val { color: var(--worst); }
+  .stat.median .val { color: var(--median); }
+  .stat.mean .val { color: var(--mean); }
+  .upstrip { margin-top: 12px; padding: 10px 12px;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+    font-size: 14px; }
+  .upstrip .lbl { color: var(--muted); }
+  .upstrip .val { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .upstrip .val.up { color: var(--best); }
+  .upstrip .val.down { color: var(--worst); }
+  .ddblock { margin-top: 10px; padding: 10px 12px;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 8px; }
+  .ddblock .head { font-size: 12px; color: var(--muted); margin-bottom: 8px;
+    text-transform: uppercase; letter-spacing: 0.05em; }
+  .ddgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .ddcell { text-align: center; }
+  .ddcell .lvl { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .ddcell .pct { font-size: 15px; font-weight: 600; color: var(--worst);
+    font-variant-numeric: tabular-nums; }
   .foot { text-align: center; color: var(--muted); font-size: 12px; margin-top: 20px; }
 </style>
 </head>
@@ -82,7 +145,7 @@
   <div class="card">
     <div class="row">
       <label for="bankroll">Bankroll ($)</label>
-      <input id="bankroll" type="text" inputmode="decimal" autocomplete="off" value="100,000" />
+      <input id="bankroll" type="text" inputmode="decimal" autocomplete="off" value="1,000,000" />
     </div>
     <div class="row">
       <label for="price">Contract price ($, 0-1)</label>
@@ -93,7 +156,7 @@
       <input id="theo" type="text" inputmode="decimal" autocomplete="off" value="0.55" />
     </div>
     <div class="row" style="margin-top:16px">
-      <button id="calc">Calculate</button>
+      <button class="primary" id="calc">Calculate</button>
     </div>
     <div id="status" class="status muted"></div>
   </div>
@@ -112,7 +175,48 @@
     </table>
   </div>
 
-  <div class="foot">Buy when price &lt; theo, sell when price &gt; theo. Sizing is on capital at risk.</div>
+  <div class="card">
+    <div class="plot-header">
+      <h2>100-bet simulation</h2>
+      <button class="secondary" id="reroll">Reroll</button>
+    </div>
+    <div class="row">
+      <div class="segmented" id="kellyPick">
+        <button data-mult="1"     data-label="Full Kelly">Full</button>
+        <button data-mult="0.75"  data-label="3/4 Kelly">3/4</button>
+        <button data-mult="0.5"   data-label="1/2 Kelly" class="active">1/2</button>
+        <button data-mult="0.25"  data-label="1/4 Kelly">1/4</button>
+        <button data-mult="0.125" data-label="1/8 Kelly">1/8</button>
+      </div>
+    </div>
+    <canvas id="plot"></canvas>
+    <div class="stats">
+      <div class="stat best"><div class="lbl">Best</div><div class="val" id="statBest">—</div></div>
+      <div class="stat median"><div class="lbl">Median</div><div class="val" id="statMed">—</div></div>
+      <div class="stat mean"><div class="lbl">Mean</div><div class="val" id="statMean">—</div></div>
+      <div class="stat worst"><div class="lbl">Worst</div><div class="val" id="statWorst">—</div></div>
+    </div>
+    <div class="upstrip">
+      <span class="lbl">Finished up after 100 bets</span>
+      <span class="val" id="statUp">—</span>
+    </div>
+    <div class="ddblock">
+      <div class="head">Probability of drawdown from starting bankroll</div>
+      <div class="ddgrid" id="ddGrid">
+        <div class="ddcell"><div class="lvl">≥10%</div><div class="pct" data-dd="0.1">—</div></div>
+        <div class="ddcell"><div class="lvl">≥20%</div><div class="pct" data-dd="0.2">—</div></div>
+        <div class="ddcell"><div class="lvl">≥30%</div><div class="pct" data-dd="0.3">—</div></div>
+        <div class="ddcell"><div class="lvl">≥40%</div><div class="pct" data-dd="0.4">—</div></div>
+        <div class="ddcell"><div class="lvl">≥50%</div><div class="pct" data-dd="0.5">—</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    Buy when price &lt; theo, sell when price &gt; theo. Sizing is on capital at risk.<br />
+    Simulation assumes theo is the true probability; 100 bets, 500 paths, log-scale bankroll.<br />
+    Blue = median, purple = mean, green = best, red = worst.
+  </div>
 </div>
 
 <script>
@@ -124,7 +228,25 @@
     ["1/8 Kelly", 0.125],
   ];
 
+  const N_BETS = 100;
+  const N_PATHS = 500;
+
   const fmt = (n, d = 2) => n.toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d });
+  const fmtMoney = (n) => {
+    if (!Number.isFinite(n)) return "—";
+    const abs = Math.abs(n);
+    if (abs >= 1e9) return `$${(n / 1e9).toFixed(2)}B`;
+    if (abs >= 1e6) return `$${(n / 1e6).toFixed(2)}M`;
+    if (abs >= 1e3) return `$${(n / 1e3).toFixed(1)}K`;
+    return `$${n.toFixed(2)}`;
+  };
+  const fmtAxis = (n) => {
+    if (n >= 1e9) return `$${(n / 1e9).toFixed(0)}B`;
+    if (n >= 1e6) return `$${(n / 1e6).toFixed(0)}M`;
+    if (n >= 1e3) return `$${(n / 1e3).toFixed(0)}K`;
+    if (n >= 1) return `$${n.toFixed(0)}`;
+    return `$${n.toFixed(2)}`;
+  };
 
   function compute(bankroll, price, theo) {
     if (price === theo) {
@@ -152,11 +274,201 @@
     return { side, f, rows };
   }
 
+  // Simulate N_PATHS bankroll trajectories over N_BETS bets.
+  // Assumes theo is the true probability. Stake = mult * f * current_bankroll.
+  function simulate(bankroll, price, theo, mult) {
+    if (price === theo || price <= 0 || price >= 1 || theo <= 0 || theo >= 1) return null;
+    const isBuy = price < theo;
+    const winProb = isBuy ? theo : (1 - theo);
+    const cost = isBuy ? price : (1 - price);
+    const payoff = isBuy ? (1 - price) : price;
+    const f = isBuy ? (theo - price) / (1 - price) : (price - theo) / price;
+    const kf = mult * f;
+
+    const paths = new Array(N_PATHS);
+    for (let p = 0; p < N_PATHS; p++) {
+      const path = new Float64Array(N_BETS + 1);
+      path[0] = bankroll;
+      let br = bankroll;
+      for (let i = 1; i <= N_BETS; i++) {
+        const stake = kf * br;
+        const contracts = cost > 0 ? stake / cost : 0;
+        if (Math.random() < winProb) br += contracts * payoff;
+        else                         br -= stake;
+        if (br < 1e-6) br = 0;
+        path[i] = br;
+      }
+      paths[p] = path;
+    }
+    return paths;
+  }
+
+  function drawPlot(paths, bankroll) {
+    const canvas = document.getElementById("plot");
+    const cssW = canvas.parentElement.clientWidth - 32;
+    const cssH = Math.round(cssW * 0.62);
+    const dpr = window.devicePixelRatio || 1;
+    canvas.style.width = cssW + "px";
+    canvas.style.height = cssH + "px";
+    canvas.width = Math.round(cssW * dpr);
+    canvas.height = Math.round(cssH * dpr);
+    const ctx = canvas.getContext("2d");
+    ctx.scale(dpr, dpr);
+
+    const cs = getComputedStyle(document.body);
+    const gridColor = cs.getPropertyValue("--grid").trim() || "#eee";
+    const mutedColor = cs.getPropertyValue("--muted").trim() || "#999";
+    const pathColor = cs.getPropertyValue("--path").trim() || "rgba(120,130,150,0.3)";
+    const bestColor = cs.getPropertyValue("--best").trim() || "#4ade80";
+    const worstColor = cs.getPropertyValue("--worst").trim() || "#f87171";
+    const medianColor = cs.getPropertyValue("--median").trim() || "#4ea1ff";
+    const meanColor = cs.getPropertyValue("--mean").trim() || "#c084fc";
+
+    // Margins
+    const mL = 52, mR = 8, mT = 8, mB = 28;
+    const plotW = cssW - mL - mR;
+    const plotH = cssH - mT - mB;
+
+    // Clear
+    ctx.clearRect(0, 0, cssW, cssH);
+
+    if (!paths || paths.length === 0) {
+      ctx.fillStyle = mutedColor;
+      ctx.font = "13px -apple-system, system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("No edge — nothing to simulate.", cssW / 2, cssH / 2);
+      return;
+    }
+
+    // Find y range (log). Floor at bankroll * 1e-3 so wipeouts don't collapse the plot.
+    let mn = Infinity, mx = -Infinity;
+    for (const p of paths) for (const v of p) {
+      if (v > 0 && v < mn) mn = v;
+      if (v > mx) mx = v;
+    }
+    if (!Number.isFinite(mn)) mn = bankroll;
+    const yMin = Math.max(mn, bankroll * 1e-3);
+    const yMax = Math.max(mx, bankroll * 1.001);
+    const logMin = Math.log10(yMin);
+    const logMax = Math.log10(yMax);
+    const logRange = Math.max(logMax - logMin, 0.01);
+
+    const xToPx = (i) => mL + (i / N_BETS) * plotW;
+    const yToPx = (v) => {
+      const vv = Math.max(v, yMin);
+      return mT + plotH - ((Math.log10(vv) - logMin) / logRange) * plotH;
+    };
+
+    // Grid: log-decade horizontal lines
+    ctx.strokeStyle = gridColor;
+    ctx.fillStyle = mutedColor;
+    ctx.font = "11px -apple-system, system-ui, sans-serif";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    ctx.lineWidth = 1;
+
+    const decadeStart = Math.floor(logMin);
+    const decadeEnd = Math.ceil(logMax);
+    for (let d = decadeStart; d <= decadeEnd; d++) {
+      const v = Math.pow(10, d);
+      if (v < yMin * 0.9 || v > yMax * 1.1) continue;
+      const y = yToPx(v);
+      ctx.beginPath(); ctx.moveTo(mL, y); ctx.lineTo(mL + plotW, y); ctx.stroke();
+      ctx.fillText(fmtAxis(v), mL - 6, y);
+    }
+
+    // Bankroll baseline (dashed)
+    ctx.save();
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = mutedColor;
+    ctx.globalAlpha = 0.5;
+    const y0 = yToPx(bankroll);
+    ctx.beginPath(); ctx.moveTo(mL, y0); ctx.lineTo(mL + plotW, y0); ctx.stroke();
+    ctx.restore();
+
+    // X ticks
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    for (let i = 0; i <= 5; i++) {
+      const bets = Math.round((i / 5) * N_BETS);
+      const x = xToPx(bets);
+      ctx.beginPath();
+      ctx.strokeStyle = gridColor;
+      ctx.moveTo(x, mT + plotH); ctx.lineTo(x, mT + plotH + 4); ctx.stroke();
+      ctx.fillStyle = mutedColor;
+      ctx.fillText(String(bets), x, mT + plotH + 6);
+    }
+
+    // Find best / worst by final bankroll
+    let bestIdx = 0, worstIdx = 0;
+    for (let i = 1; i < paths.length; i++) {
+      if (paths[i][N_BETS] > paths[bestIdx][N_BETS]) bestIdx = i;
+      if (paths[i][N_BETS] < paths[worstIdx][N_BETS]) worstIdx = i;
+    }
+
+    // Draw ordinary paths first
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = pathColor;
+    for (let p = 0; p < paths.length; p++) {
+      if (p === bestIdx || p === worstIdx) continue;
+      const path = paths[p];
+      ctx.beginPath();
+      ctx.moveTo(xToPx(0), yToPx(path[0]));
+      for (let i = 1; i <= N_BETS; i++) ctx.lineTo(xToPx(i), yToPx(path[i]));
+      ctx.stroke();
+    }
+
+    // Median and mean across paths at each timestep
+    const medianPath = new Float64Array(N_BETS + 1);
+    const meanPath = new Float64Array(N_BETS + 1);
+    const col = new Float64Array(paths.length);
+    const midLo = (paths.length - 1) >> 1;
+    const midHi = paths.length >> 1;
+    for (let i = 0; i <= N_BETS; i++) {
+      let s = 0;
+      for (let p = 0; p < paths.length; p++) { col[p] = paths[p][i]; s += paths[p][i]; }
+      col.sort();
+      medianPath[i] = (col[midLo] + col[midHi]) / 2;
+      meanPath[i] = s / paths.length;
+    }
+
+    // Best, worst, median, mean on top
+    const drawLine = (arr, color, width) => {
+      ctx.lineWidth = width;
+      ctx.strokeStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(xToPx(0), yToPx(arr[0]));
+      for (let i = 1; i <= N_BETS; i++) ctx.lineTo(xToPx(i), yToPx(arr[i]));
+      ctx.stroke();
+    };
+    drawLine(paths[worstIdx], worstColor, 2);
+    drawLine(paths[bestIdx], bestColor, 2);
+    drawLine(medianPath, medianColor, 2.5);
+    drawLine(meanPath, meanColor, 2.5);
+
+    // Border
+    ctx.strokeStyle = gridColor;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(mL, mT, plotW, plotH);
+  }
+
+  // ---- Elements
   const bankrollEl = document.getElementById("bankroll");
   const priceEl = document.getElementById("price");
   const theoEl = document.getElementById("theo");
   const statusEl = document.getElementById("status");
   const rowsEl = document.getElementById("rows");
+  const kellyPick = document.getElementById("kellyPick");
+  const rerollBtn = document.getElementById("reroll");
+  const statBest = document.getElementById("statBest");
+  const statMed = document.getElementById("statMed");
+  const statMean = document.getElementById("statMean");
+  const statWorst = document.getElementById("statWorst");
+  const statUp = document.getElementById("statUp");
+  const ddCells = Array.from(document.querySelectorAll("#ddGrid .pct"));
+
+  let currentMult = 0.5;
 
   bankrollEl.addEventListener("input", () => {
     const raw = bankrollEl.value;
@@ -176,28 +488,65 @@
     if (out !== raw) bankrollEl.value = out;
   });
 
-  function calculate() {
-    rowsEl.innerHTML = "";
+  function parseInputs() {
     const bankroll = parseFloat(bankrollEl.value.replace(/,/g, ""));
     const price = parseFloat(priceEl.value);
     const theo = parseFloat(theoEl.value);
+    if (![bankroll, price, theo].every(Number.isFinite)) return { err: "Enter valid numbers." };
+    if (bankroll <= 0) return { err: "Bankroll must be positive." };
+    if (!(price > 0 && price < 1) || !(theo > 0 && theo < 1))
+      return { err: "Price and theo must be strictly between 0 and 1." };
+    return { bankroll, price, theo };
+  }
 
-    if (![bankroll, price, theo].every(Number.isFinite)) {
-      statusEl.className = "status err";
-      statusEl.textContent = "Enter valid numbers.";
+  function runSim(bankroll, price, theo) {
+    const paths = simulate(bankroll, price, theo, currentMult);
+    drawPlot(paths, bankroll);
+    if (!paths) {
+      statBest.textContent = statMed.textContent = statMean.textContent = statWorst.textContent = "—";
+      statUp.textContent = "—"; statUp.className = "val";
+      for (const c of ddCells) c.textContent = "—";
       return;
     }
-    if (bankroll <= 0) {
-      statusEl.className = "status err";
-      statusEl.textContent = "Bankroll must be positive.";
-      return;
-    }
-    if (!(price > 0 && price < 1) || !(theo > 0 && theo < 1)) {
-      statusEl.className = "status err";
-      statusEl.textContent = "Price and theo must be strictly between 0 and 1.";
-      return;
-    }
+    const finals = paths.map(p => p[N_BETS]).sort((a, b) => a - b);
+    const med = finals[Math.floor(finals.length / 2)];
+    const mean = finals.reduce((a, b) => a + b, 0) / finals.length;
+    const upCount = finals.filter(v => v > bankroll).length;
+    const upPct = upCount / finals.length;
+    statBest.textContent = fmtMoney(finals[finals.length - 1]);
+    statMed.textContent = fmtMoney(med);
+    statMean.textContent = fmtMoney(mean);
+    statWorst.textContent = fmtMoney(finals[0]);
+    statUp.textContent = `${(upPct * 100).toFixed(1)}%  (${upCount} / ${finals.length})`;
+    statUp.className = "val " + (upPct > 0.5 ? "up" : upPct < 0.5 ? "down" : "");
 
+    // Drawdown from starting bankroll: probability that path min ≤ bankroll * (1 - dd)
+    const mins = paths.map(p => {
+      let m = p[0];
+      for (let i = 1; i < p.length; i++) if (p[i] < m) m = p[i];
+      return m;
+    });
+    for (const c of ddCells) {
+      const dd = parseFloat(c.dataset.dd);
+      const threshold = bankroll * (1 - dd);
+      const hit = mins.filter(m => m <= threshold).length;
+      c.textContent = `${(100 * hit / mins.length).toFixed(1)}%`;
+    }
+  }
+
+  function calculate() {
+    rowsEl.innerHTML = "";
+    const parsed = parseInputs();
+    if (parsed.err) {
+      statusEl.className = "status err";
+      statusEl.textContent = parsed.err;
+      drawPlot(null);
+      statBest.textContent = statMed.textContent = statMean.textContent = statWorst.textContent = "—";
+      statUp.textContent = "—"; statUp.className = "val";
+      for (const c of ddCells) c.textContent = "—";
+      return;
+    }
+    const { bankroll, price, theo } = parsed;
     const { side, f, rows } = compute(bankroll, price, theo);
     if (side === "No edge") {
       statusEl.className = "status muted";
@@ -206,7 +555,6 @@
       statusEl.className = "status " + side.toLowerCase();
       statusEl.textContent = `${side}  |  full Kelly = ${(f * 100).toFixed(2)}% of bankroll`;
     }
-
     for (const [label, contracts, dollars, edge] of rows) {
       const tr = document.createElement("tr");
       tr.innerHTML = `
@@ -217,12 +565,34 @@
       `;
       rowsEl.appendChild(tr);
     }
+    runSim(bankroll, price, theo);
   }
 
   document.getElementById("calc").addEventListener("click", calculate);
+  rerollBtn.addEventListener("click", () => {
+    const parsed = parseInputs();
+    if (!parsed.err) runSim(parsed.bankroll, parsed.price, parsed.theo);
+  });
+  kellyPick.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-mult]");
+    if (!btn) return;
+    for (const b of kellyPick.querySelectorAll("button")) b.classList.remove("active");
+    btn.classList.add("active");
+    currentMult = parseFloat(btn.dataset.mult);
+    const parsed = parseInputs();
+    if (!parsed.err) runSim(parsed.bankroll, parsed.price, parsed.theo);
+  });
   for (const el of [bankrollEl, priceEl, theoEl]) {
     el.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); calculate(); } });
   }
+  window.addEventListener("resize", () => {
+    const parsed = parseInputs();
+    if (!parsed.err) {
+      // Redraw with existing sim would need to cache paths; simpler to re-sim.
+      runSim(parsed.bankroll, parsed.price, parsed.theo);
+    }
+  });
+
   calculate();
 </script>
 </body>
