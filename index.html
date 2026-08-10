@@ -149,11 +149,11 @@
     </div>
     <div class="row">
       <label for="price">Contract price ($, 0-1)</label>
-      <input id="price" type="text" inputmode="decimal" autocomplete="off" value="0.50" />
+      <input id="price" type="text" inputmode="decimal" autocomplete="off" value="0.25" />
     </div>
     <div class="row">
       <label for="theo">Contract theo ($, 0-1)</label>
-      <input id="theo" type="text" inputmode="decimal" autocomplete="off" value="0.55" />
+      <input id="theo" type="text" inputmode="decimal" autocomplete="off" value="0.22" />
     </div>
     <div class="row" style="margin-top:16px">
       <button class="primary" id="calc">Calculate</button>
@@ -517,7 +517,7 @@
     statMed.textContent = fmtMoney(med);
     statMean.textContent = fmtMoney(mean);
     statWorst.textContent = fmtMoney(finals[0]);
-    statUp.textContent = `${(upPct * 100).toFixed(1)}%  (${upCount} / ${finals.length})`;
+    statUp.textContent = `${(upPct * 100).toFixed(1)}%`;
     statUp.className = "val " + (upPct > 0.5 ? "up" : upPct < 0.5 ? "down" : "");
 
     // Drawdown from starting bankroll: probability that path min ≤ bankroll * (1 - dd)
